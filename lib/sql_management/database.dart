@@ -71,6 +71,22 @@ class DataBase {
 
   }
 
+  Future<int> insertNewStudent(Students student) async {
+    int result = 0;
+
+    try{
+      final Database db = await initializedDB();
+
+      result = await db.insert(StudentFields.tableName, student.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+
+    } catch (e){
+      _logger.e('Error while inserting new student: $e');
+    }
+
+    return result;
+
+  }
+
   Future<List<Students>> retrieveStudents() async {
     try{
       final Database db = await initializedDB();
@@ -105,7 +121,11 @@ class DataBase {
         where: "${StudentFields.id} = ?",
         whereArgs: [student.id]
       );
-    } catch (e){}
+    } catch (e){
+      _logger.e('Error while updating student: $e');
+      return 0;
+
+    }
   }
 
 }

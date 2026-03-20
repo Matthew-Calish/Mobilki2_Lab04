@@ -1,9 +1,10 @@
-import 'dart:js_interop';
+
 
 import 'package:flutter/material.dart';
 import 'sql_management/model_students.dart';
 import 'sql_management/database.dart';
 import 'dart:async';
+import 'addStudentPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +13,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -38,6 +38,8 @@ class _MainScreen extends State<MainScreen> {
   late DataBase handler;
   late Future<List<Students>> _studentsFuture;
 
+  int lastID = 0;
+
   Future<void> addStudents() async {
     final existingStudents = await handler.retrieveStudents();
     final existingIds = existingStudents.map((student) => student.id).toSet();
@@ -47,7 +49,11 @@ class _MainScreen extends State<MainScreen> {
       Students(id: 2, firstName: 'Adam', lastName: 'Nowak', studentsYear: 2),
       Students(id: 3, firstName: 'Piotr', lastName: 'Kowalski', studentsYear: 3),
       Students(id: 4, firstName: 'Kamil', lastName: 'Chlebiej', studentsYear: 1),
+      Students(id: 5, firstName: 'Patryk', lastName: 'Kusper', studentsYear: 1),
+      Students(id: 6, firstName: 'Aleksandra', lastName: 'Pawlik', studentsYear: 5),
     ];
+
+    lastID += 6;
 
     final missingStudents = seedStudents.where((student) => !existingIds.contains(student.id)).toList();
 
@@ -83,60 +89,88 @@ class _MainScreen extends State<MainScreen> {
           backgroundColor: Colors.lightBlueAccent,
           title: Text("Baza Danych MK"),
         ),
-        body: FutureBuilder<List<Students>>(
-            future: _studentsFuture,
-            builder: (BuildContext context, AsyncSnapshot<List<Students>> snapshot) {
+        body: _mainLayout(context)
+    );
+  }
 
-              if (snapshot.connectionState == ConnectionState.waiting){
-                return const Center(child: CircularProgressIndicator());
-              }
+  Widget _mainLayout(BuildContext context) {
 
-              if(snapshot.hasError){
-                return Center(
-                  child: Text(
-                    'Error: ${snapshot.error}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Colors.red
-                    ),
+    return FutureBuilder<List<Students>>(
+        future: _studentsFuture,
+        builder: (BuildContext context, AsyncSnapshot<List<Students>> snapshot) {
 
-                  ),
-                );
+          if (snapshot.connectionState == ConnectionState.waiting){
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              }
+          if(snapshot.hasError){
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(
+                    fontSize: 20,
+                    color: Colors.red
+                ),
 
-              if(!snapshot.hasData || snapshot.data!.isEmpty){
-                return const Center(
-                  child: Text(
+              ),
+            );
+
+          }
+
+          if(!snapshot.hasData || snapshot.data!.isEmpty){
+            return const Center(
+                child: Text(
                     'Brak danych w bazie danych',
                     style: TextStyle(
                       fontSize: 20,
                     )
-                  )
-                );
-              }
+                )
+            );
+          }
 
-              final students = snapshot.data!;
+          final students = snapshot.data!;
 
-              return ListView.builder(
+          return Scaffold(
+            body: ListView.builder(
                 itemCount: students.length,
                 itemBuilder: (BuildContext context, int index) {
                   return Card(
                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: ListTile(
                       title: Text(
-                        '${students[index].firstName} ${students[index].lastName}'
+                          '${students[index].firstName} ${students[index].lastName}'
                       ),
                       subtitle: Text(
-                        'Year: ${students[index].studentsYear}'
+                          'Year: ${students[index].studentsYear}'
                       ),
                     ),
                   );
                 }
-              );
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                _goToAddStudentPage(context);
+              },
+              child: const Icon(Icons.add),
+            )
 
-            }
-        )
+          );
+
+        }
+    );
+
+  }
+
+  void _goToAddStudentPage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AddStudentPage(lastID: lastID,),
+      ),
     );
   }
+
+  int returnLastID(){
+    return lastID;
+  }
+
 }
