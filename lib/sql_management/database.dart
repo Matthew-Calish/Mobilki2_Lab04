@@ -77,6 +77,8 @@ class DataBase {
     try{
       final Database db = await initializedDB();
 
+      _logger.d('Inserting new student: $student');
+
       result = await db.insert(StudentFields.tableName, student.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
 
     } catch (e){

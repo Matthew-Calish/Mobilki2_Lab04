@@ -9,11 +9,9 @@ import 'main.dart';
 
 class AddStudentPage extends StatefulWidget {
 
-  final int lastID;
 
   const AddStudentPage({
     super.key,
-    required this.lastID
   });
 
   @override
@@ -26,16 +24,33 @@ class _AddStudentPage extends State<AddStudentPage> {
   String lastName = '';
   int year = 1;
 
+  int newStudentIndex = 999;
+
   late DataBase handler;
+  late Future<List<Students>> _studentsFuture;
 
   Future<void> addNewStudent(Students newStudent) async{
     await handler.insertNewStudent(newStudent);
   }
 
+  Future<List<Students>> _loadStudents() async {
+    await handler.initializedDB();
+    return handler.retrieveStudents();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    handler = DataBase();
+    _studentsFuture = _loadStudents();
+  }
+
+
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
+      backgroundColor: Colors.blueAccent,
       appBar: AppBar(
         title: const Text(
             'Dodaj studenta',
@@ -63,102 +78,142 @@ class _AddStudentPage extends State<AddStudentPage> {
         child: Card(
           child: Container(
             margin: const EdgeInsets.all(5.0),
-            child: Column(
-              spacing: 10,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            child: FutureBuilder(
+                future: _studentsFuture,
+                builder: (BuildContext context, AsyncSnapshot<List<Students>> snapshot) {
 
-                Card(
-                  child: Container(
-                    margin: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                            "Wprowadz imię studenta:",
-                          style: TextStyle(
-                            fontSize: 18,
-                          ),
+                  if (snapshot.connectionState == ConnectionState.waiting){
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if(snapshot.hasError){
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.red
                         ),
-                        TextField(
-                          onChanged: (value){
-                            name = value;
-                          },
+
+                      ),
+                    );
+
+                  }
+
+                  if(!snapshot.hasData || snapshot.data!.isEmpty){
+                    return const Center(
+                        child: Text(
+                            'Brak danych w bazie danych',
+                            style: TextStyle(
+                              fontSize: 20,
+                            )
                         )
-                      ]
-                    ),
-                  ),
-                ),
-                Card(
-                  child: Container(
-                    margin: const EdgeInsets.all(16.0),
+                    );
+                  }
+
+                  newStudentIndex = snapshot.data!.length;
+
+                  return SingleChildScrollView(
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: 10,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                              "Wprowadz nazwisko studenta:",
-                            style: TextStyle(
-                              fontSize: 18,
-                            ),
-                          ),
-                          TextField(
-                            onChanged: (value){
-                              lastName = value;
-                            },
-                          )
-                        ]
-                    ),
-                  ),
-                ),
-                Card(
-                  child: Container(
-                    margin: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Wybierz rok studenta:",
-                            style: TextStyle(
-                              fontSize: 18,
-                            ),
-                          ),
-                          DropdownButton<int>(
-                            value: year,
-                            onChanged: (value) {
-                              setState(() {
-                                year = value!;
-                              });
-                            },
-                            items: List<DropdownMenuItem<int>>.generate(
-                              5,
-                                  (index) => DropdownMenuItem<int>(
-                                value: index + 1,
-                                child: Text('${index + 1}'),
+
+                          Card(
+                            child: Container(
+                              margin: const EdgeInsets.all(16.0),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Wprowadz imię studenta:",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    TextField(
+                                      onChanged: (value){
+                                        name = value;
+                                      },
+                                    )
+                                  ]
                               ),
                             ),
+                          ),
+                          Card(
+                            child: Container(
+                              margin: const EdgeInsets.all(16.0),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Wprowadz nazwisko studenta:",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    TextField(
+                                      onChanged: (value){
+                                        lastName = value;
+                                      },
+                                    )
+                                  ]
+                              ),
+                            ),
+                          ),
+                          Card(
+                            child: Container(
+                              margin: const EdgeInsets.all(16.0),
+                              child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Wybierz rok studenta:",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    DropdownButton<int>(
+                                      value: year,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          year = value!;
+                                        });
+                                      },
+                                      items: List<DropdownMenuItem<int>>.generate(
+                                        5,
+                                            (index) => DropdownMenuItem<int>(
+                                          value: index + 1,
+                                          child: Text('${index + 1}'),
+                                        ),
+                                      ),
+                                    )
+                                  ]
+                              ),
+                            ),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.all(16.0),
+                            child: ElevatedButton(
+                                onPressed: () {
+                                  addNewStudent(Students(id: newStudentIndex, firstName: name, lastName: lastName, studentsYear: year));
+                                  newStudentIndex += 1;
+                                  Navigator.pop(context);
+                                },
+                                child: const Text(
+                                    'Dodaj studenta',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                    )
+                                )
+                            ),
                           )
                         ]
                     ),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.all(16.0),
-                  child: ElevatedButton(
-                    onPressed: () {
+                  );
 
-                      addNewStudent(Students(id: 999, firstName: name, lastName: lastName, studentsYear: year));
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Dodaj studenta',
-                      style: TextStyle(
-                        fontSize: 18,
-                      )
-                    )
-                  ),
-                )
-              ]
+                }
             ),
           ),
         ),

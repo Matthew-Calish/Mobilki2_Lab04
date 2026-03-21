@@ -2,10 +2,10 @@ import 'model_students_fields.dart';
 
 class Students {
 
-  late final int id;
-  late final String firstName;
-  late final String lastName;
-  late final int studentsYear;
+  late  int id;
+  late  String firstName;
+  late  String lastName;
+  late  int studentsYear;
 
   Students({
     required this.id,
